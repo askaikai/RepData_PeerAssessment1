@@ -1,8 +1,6 @@
 # Reproducible Research: Peer Assessment 1
 This is an R-markdown for Peer Assessment 1 in Reproducible Research.  
 Written by ai  
-knit2html('PA1_template.Rmd')
-
 
 ## Loading and preprocessing the data
 Go to the right directory, and read in data
@@ -29,7 +27,6 @@ ggplot(dSum, aes(sumSteps)) + geom_histogram(binwidth=500, colour="black", fill=
 library(xtable)
 table = sqldf('select avg(sumSteps), median(sumSteps) from dSum')
 print(table, type="html")
-
 ```
 
 ## What is the average daily activity pattern?
@@ -42,12 +39,90 @@ title(main='Time-series of average steps at each interval across days',
 ```
 
 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
-
-
-
+```{r}
+maxLine = which(dTimeSeries$avgSteps==max(dTimeSeries$avgSteps))
+maxSteps = dTimeSeries$interval[maxLine]
+```
+Interval `r maxSteps` contains the max number of steps (`r dTimeSeries$avgSteps[maxLine]`)
 
 ## Imputing missing values
+Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
 
+1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+```{r}
+a=matrix(0,length(names(d)),2)
+for (i in 1:length(names(d))){
+  a[i,1] = names(d)[i]
+  a[i,2] = sum(is.na(d[i]))
+}
+a = data.frame(a)
+colnames(a) = c('variable','NAcount')
+print(a, type="html")
+```
+Out of `r dim(d)[1]` entries in the data set, `r a$NAcount[1]` are NAs
 
+2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+Missing values were filled using the average of steps from the same interval.
+```{r}
+dFilled = d
+naEntry = which(is.na(d$steps))
+for (i in 1:length(naEntry)){
+  intervalIdx = which(dTimeSeries$interval==d$interval[naEntry][i])
+  dFilled$steps[naEntry][i]=dTimeSeries$avgSteps[intervalIdx]
+}
+```
+
+3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+
+After the calculation described above, from the original data set with missing data,
+```{r echo=FALSE}
+print(head(d), type="html")
+```
+
+the new dataset with missing values filled in was created
+```{r echo=FALSE}
+print(head(dFilled), type="html")
+```
+
+4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+```{r fig.height=4}
+dSumFilled = sqldf('select date, sum(steps) as sumSteps from dFilled group by date')
+dSumFilled$sumSteps = as.numeric(dSumFilled$sumSteps)
+dBig = data.frame(c(dSum$sumSteps, dSumFilled$sumSteps))
+colnames(dBig)='dailyTotalSteps'
+dBig$data = rep(c('original','filled'),each=dim(dBig)[1]/2)
+
+ggplot(dBig,aes(x=dailyTotalSteps,color=data))+
+  geom_histogram(binwidth=500, alpha=.2, position="identity") +
+  labs(list(title = 'Distribution of the total number of steps taken each day', x = "sum of steps", y = "count (days)"))
+```
+
+Interestingly, the only difference between the original and the filled data is the number of days the total stop was the highest. This suggests that, in the original data set, NAs happened throughout a given day. To test this speculation, I ran;
+
+```{r}
+a = matrix(0,length(levels(d$date)),2)
+for (i in 1:length(levels(d$date))){
+a[i,1] = levels(d$date)[i]
+a[i,2] = sum(is.na(d$steps[d$date==a[i,1]]))
+}
+a = data.frame(a)
+colnames(a) = c('date','nNAs')
+print(a, type="html")
+```
+
+The table above confirms my speculation; NAs in the original dat set always happened in a given day, but never some part of a day.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+dSum$days = weekdays(as.Date(dSum$date), abbreviate=TRUE)
+
+
+
+```
+
+
+
+
+

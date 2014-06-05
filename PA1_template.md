@@ -53,7 +53,6 @@ title(main='Time-series of average steps at each interval across days',
 
 ![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3.png) 
 
-
 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
 
