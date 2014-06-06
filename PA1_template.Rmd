@@ -104,25 +104,38 @@ Interestingly, the only difference between the original and the filled data is t
 ```{r}
 a = matrix(0,length(levels(d$date)),2)
 for (i in 1:length(levels(d$date))){
-a[i,1] = levels(d$date)[i]
-a[i,2] = sum(is.na(d$steps[d$date==a[i,1]]))
+  a[i,1] = levels(d$date)[i]
+  a[i,2] = sum(is.na(d$steps[d$date==a[i,1]]))
 }
 a = data.frame(a)
 colnames(a) = c('date','nNAs')
-print(a, type="html")
+print(table(a$nNAs), type="html")
 ```
 
-The table above confirms my speculation; NAs in the original dat set always happened in a given day, but never some part of a day.
+The table above confirms my speculation; NAs in the original dat set always happened in a given day, but never some part of a day. Number of NAs within a day is either 0 or 288.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+Check out the pattern in the original data set:
 ```{r}
 dSum$days = weekdays(as.Date(dSum$date), abbreviate=TRUE)
+dSum$days = gsub("^[m|t|w|f]\\w*", "Weekday", dSum$days, perl=TRUE,ignore.case=TRUE)
+dSum$days = gsub("^s\\w*", "Weekend", dSum$days, perl=TRUE,ignore.case=TRUE)
 
+dSumDays = sqldf('select days, avg(sumSteps) from dSum group by days')
+print(dSumDays, type="html")
+```
+It appears that number of steps increase during the weekend compared to weekdays. I'm curious to see at which time interval the number of steps differ between weekend and weekdays. My prediction is that we see the difference in mid-day, where people usually spend time at their desks on weekdays...
 
+```{r fig.height=4}
+d$days = weekdays(as.Date(d$date), abbreviate=TRUE)
+d$days = gsub("^[m|t|w|f]\\w*", "Weekday", d$days, perl=TRUE,ignore.case=TRUE)
+d$days = gsub("^s\\w*", "Weekend", d$days, perl=TRUE,ignore.case=TRUE)
 
+dDays = sqldf('select days, interval, avg(steps) as avgSteps from d group by days, interval')
+
+ggplot(data=dDays, aes(x=interval, y=avgSteps, colour=days)) + 
+  geom_line() + 
+  labs(list(title = 'Distribution of number of steps \n Weekday vs. Weekend', x = "interval", y = "number of steps"))
 ```
 
-
-
-
-
+As I suspected, number of steps increased during the weekend in the middle of the measured interval. Another interesting finding is that number of steps are higher on weekdays in earlier interval. I guess poeple sleep in on weekends and generally have a later start!
