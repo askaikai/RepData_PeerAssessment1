@@ -3,22 +3,27 @@ This is an R-markdown for Peer Assessment 1 in Reproducible Research.
 Written by ai  
 
 ## Loading and preprocessing the data
-Go to the right directory, and read in data
-``` {r setoptions, echo=TRUE}
+1. Load the data
+First, go to the right directory and read in data
+``` {r setoptions, echo=TRUE, message=FALSE, warning=FALSE}
 setwd('~/Documents/Coursera/ReproducibleResearch//RepData_PeerAssessment1')
 d = read.csv('activity.csv')
 ```
 
-## What is mean total number of steps taken per day?
-For this part of the assignment, you can ignore the missing values in the dataset.
-
-1. Make a histogram of the total number of steps taken each day
+2. Process/transform the data (if necessary) into a format suitable for your analysis
+Load analysis libraries and make relevant variable numerical
 ```{r, message=FALSE, warning=FALSE}
 library(ggplot2)
 library(sqldf)
 dSum = sqldf('select date, sum(steps) as sumSteps from d group by date')
 dSum$sumSteps = as.numeric(dSum$sumSteps)
+```
 
+## What is mean total number of steps taken per day?
+_For this part of the assignment, you can ignore the missing values in the dataset._
+
+1. Make a histogram of the total number of steps taken each day
+```{r, message=FALSE, warning=FALSE}
 g= ggplot(dSum, aes(sumSteps)) + 
   geom_histogram(binwidth=500, colour="black", fill="white") + 
   labs(list(title = 'Distribution of the total number of steps taken each day', x = "sum of steps", y = "count (days)"))
@@ -33,7 +38,7 @@ library(xtable)
 table = sqldf('select avg(sumSteps), median(sumSteps) from dSum')
 print(table, type="html")
 ```
-Mean and median number of steps taken per day is `r table[1]` and `r table[2]`, respectively.
+Mean and median number of steps taken per day is `r format(round(table[1], 2), nsmall = 2)` and `r format(round(table[2], 2), nsmall = 2)`, respectively.
 
 ## What is the average daily activity pattern?
 1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
@@ -47,7 +52,6 @@ dev.off()
 ```
 ![figure](figure/avgDailyACtivityPattern.png)
 
-
 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 ```{r}
 maxLine = which(dTimeSeries$avgSteps==max(dTimeSeries$avgSteps))
@@ -56,7 +60,7 @@ maxSteps = dTimeSeries$interval[maxLine]
 Interval `r maxSteps` contains the max number of steps (`r dTimeSeries$avgSteps[maxLine]`)
 
 ## Imputing missing values
-Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
+_Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data._
 
 1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
 ```{r}
@@ -73,7 +77,9 @@ Out of `r dim(d)[1]` entries in the data set, `r a$NAcount[1]` are NAs
 
 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
-Missing values were filled using the average of steps from the same interval.
+I think it's a good approach to fill the missing values using the average of steps from the same interval, since there are enough data to cover all intervals
+
+3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 ```{r}
 dFilled = d
 naEntry = which(is.na(d$steps))
@@ -82,8 +88,6 @@ for (i in 1:length(naEntry)){
   dFilled$steps[naEntry][i]=dTimeSeries$avgSteps[intervalIdx]
 }
 ```
-
-3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
 After the calculation described above, from the original data set with missing data,
 ```{r echo=FALSE}
@@ -100,11 +104,19 @@ print(head(dFilled), type="html")
 ```{r, message=FALSE, warning=FALSE}
 dSumFilled = sqldf('select date, sum(steps) as sumSteps from dFilled group by date')
 dSumFilled$sumSteps = as.numeric(dSumFilled$sumSteps)
+table = sqldf('select avg(sumSteps), median(sumSteps) from dSumFilled')
+print(table, type="html")
+```
+Mean and median number of steps taken per day is `r format(round(table[1], 2), nsmall = 2)` and `r format(round(table[2], 2), nsmall = 2)`, respectively. These numbers are slightly different from the original data set, but the difference is very small. Now I'm going to make histograms to see where the difference is coming from.
+
+
+```{r, message=FALSE, warning=FALSE}
 dBig = data.frame(c(dSum$sumSteps, dSumFilled$sumSteps))
 colnames(dBig)='dailyTotalSteps'
 dBig$data = rep(c('original','filled'),each=dim(dBig)[1]/2)
 
 g = ggplot(dBig,aes(x=dailyTotalSteps,color=data)) +
+  facet_grid(.~data) + 
   geom_histogram(binwidth=500, alpha=.2, position="identity", size = .8) +
   theme_grey() + 
   labs(list(title = 'Distribution of the total number of steps taken each day', x = "sum of steps", y = "count (days)"))
@@ -125,10 +137,10 @@ colnames(a) = c('date','nNAs')
 print(table(a$nNAs), type="html")
 ```
 
-The table above confirms my speculation; NAs in the original dat set always happened in a given day, but never some part of a day. Number of NAs within a day is either 0 or 288.
+The table above confirms my speculation; NAs in the original dat set always happened throughout a given day, but never happened some part of a day. Number of NAs within a day is either 0 (no NAs) or 288 (all NAs).
 
 ## Are there differences in activity patterns between weekdays and weekends?
-For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
+_For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part._
 
 1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
