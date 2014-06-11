@@ -4,11 +4,18 @@ Written by ai
 
 ## Loading and preprocessing the data
 1. Load the data
-First, go to the right directory and read in data
+First, go to the right directory and read in data. Then clean up the interval into more meaningful expression: time. In addition, intervalIdx variable is created to index interval as continuous a variable.
 
 ```r
 setwd('~/Documents/Coursera/ReproducibleResearch//RepData_PeerAssessment1')
 d = read.csv('activity.csv')
+d$interval_orig = d$interval
+d$interval <- strptime(paste(d$date, sapply(d$interval_orig, formatC, width = 4, flag = 0)), format = "%Y-%m-%d %H%M")
+d$interval = gsub("^2012-\\w*-\\w* ","",d$interval)
+d$intervalIdx = 0
+for (i in 1:length(d$intervalIdx)){
+  d$intervalIdx[i]= which(unique(d$interval_orig)==d$interval_orig[i])
+}
 ```
 
 2. Process/transform the data (if necessary) into a format suitable for your analysis
@@ -33,7 +40,7 @@ g= ggplot(dSum, aes(sumSteps)) +
 
 ggsave(filename="figure/histTotalNumSteps.png",plot=g,dpi=72)
 ```
-![figure](figure/histTotalNumSteps.png)
+![plot of chunk histTotalNumSteps](figure/histTotalNumSteps.png)
 
 2. Calculate and report the mean and median total number of steps taken per day
 
@@ -53,19 +60,18 @@ Mean and median number of steps taken per day is 10766.19 and 10765.00, respecti
 1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
 ```r
+dTimeSeries = sqldf('select interval, intervalIdx, avg(steps) as avgSteps from d group by interval')
+zeroHourIdx = grep("(^\\d*):00:(\\d*)",dTimeSeries$interval) # look for xx:00:xx to use in plotting
+zeroHour = dTimeSeries$interval[zeroHourIdx]
+
 png(file='figure/avgDailyACtivityPattern.png')
-dTimeSeries = sqldf('select interval, avg(steps) as avgSteps from d group by interval')
-plot(dTimeSeries$interval, dTimeSeries$avgSteps, type="l",ann=FALSE)
+plot(dTimeSeries$intervalIdx, dTimeSeries$avgSteps, type="l",ann=FALSE, xaxt="n")
+axis(1, at=zeroHourIdx, labels=zeroHour)
 title(main='Time-series of average steps at each interval across days',
         xlab='interval', ylab='average number of steps')
 dev.off()
 ```
-
-```
-## pdf 
-##   2
-```
-![figure](figure/avgDailyACtivityPattern.png)
+![plot of chunk avgDailyACtivityPattern](figure/avgDailyACtivityPattern.png)
 
 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
@@ -73,7 +79,7 @@ dev.off()
 maxLine = which(dTimeSeries$avgSteps==max(dTimeSeries$avgSteps))
 maxSteps = dTimeSeries$interval[maxLine]
 ```
-Interval 835 contains the max number of steps (206.1698)
+Interval 08:35:00 contains the max number of steps (206.1698)
 
 ## Imputing missing values
 _Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data._
@@ -92,10 +98,12 @@ print(a, type="html")
 ```
 
 ```
-##   variable NAcount
-## 1    steps    2304
-## 2     date       0
-## 3 interval       0
+##        variable NAcount
+## 1         steps    2304
+## 2          date       0
+## 3      interval       0
+## 4 interval_orig       0
+## 5   intervalIdx       0
 ```
 Out of 17568 entries in the data set, 2304 are NAs
 
@@ -117,25 +125,25 @@ for (i in 1:length(naEntry)){
 After the calculation described above, from the original data set with missing data,
 
 ```
-##   steps       date interval
-## 1    NA 2012-10-01        0
-## 2    NA 2012-10-01        5
-## 3    NA 2012-10-01       10
-## 4    NA 2012-10-01       15
-## 5    NA 2012-10-01       20
-## 6    NA 2012-10-01       25
+##   steps       date interval interval_orig intervalIdx
+## 1    NA 2012-10-01 00:00:00             0           1
+## 2    NA 2012-10-01 00:05:00             5           2
+## 3    NA 2012-10-01 00:10:00            10           3
+## 4    NA 2012-10-01 00:15:00            15           4
+## 5    NA 2012-10-01 00:20:00            20           5
+## 6    NA 2012-10-01 00:25:00            25           6
 ```
 
 the new dataset with missing values filled in was created
 
 ```
-##     steps       date interval
-## 1 1.71698 2012-10-01        0
-## 2 0.33962 2012-10-01        5
-## 3 0.13208 2012-10-01       10
-## 4 0.15094 2012-10-01       15
-## 5 0.07547 2012-10-01       20
-## 6 2.09434 2012-10-01       25
+##     steps       date interval interval_orig intervalIdx
+## 1 1.71698 2012-10-01 00:00:00             0           1
+## 2 0.33962 2012-10-01 00:05:00             5           2
+## 3 0.13208 2012-10-01 00:10:00            10           3
+## 4 0.15094 2012-10-01 00:15:00            15           4
+## 5 0.07547 2012-10-01 00:20:00            20           5
+## 6 2.09434 2012-10-01 00:25:00            25           6
 ```
 
 4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
@@ -168,7 +176,7 @@ g = ggplot(dBig,aes(x=dailyTotalSteps,color=data)) +
   labs(list(title = 'Distribution of the total number of steps taken each day', x = "sum of steps", y = "count (days)"))
 ggsave(filename="figure/histOrigVsFilledData.png",plot=g, dpi=72)
 ```
-![figure](figure/histOrigVsFilledData.png)
+![plot of chunk histOrigVsFilledData](figure/histOrigVsFilledData.png)
 
 Interestingly, the only difference between the original and the filled data is the number of days the total stop was the highest. This suggests that, in the original data set, NAs happened throughout a given day. To test this speculation, I ran;
 
@@ -224,18 +232,21 @@ dFilled$days = weekdays(as.Date(dFilled$date), abbreviate=TRUE)
 dFilled$days = gsub("^[m|t|w|f]\\w*", "Weekday", dFilled$days, perl=TRUE,ignore.case=TRUE)
 dFilled$days = gsub("^s\\w*", "Weekend", dFilled$days, perl=TRUE,ignore.case=TRUE)
 
-dDays = sqldf('select days, interval, avg(steps) as avgSteps from dFilled group by days, interval')
+dDays = sqldf('select days, interval, intervalIdx, avg(steps) as avgSteps from dFilled group by days, interval')
+zeroHourIdx = grep("(^\\d*):00:(\\d*)",dDays$interval[1:((dim(dDays)[1])/2)]) # look for xx:00:xx to use in plotting
+zeroHour = dTimeSeries$interval[zeroHourIdx]
 
-g = ggplot(data=dDays, aes(x=interval, y=avgSteps)) + 
+g = ggplot(data=dDays, aes(x=intervalIdx, y=avgSteps)) + 
   geom_point() + 
   geom_line() + 
   facet_grid(days~.) + 
   theme_grey() +
+  scale_x_discrete(breaks = zeroHourIdx, labels = zeroHour) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
   labs(list(title = 'Distribution of number of steps \n Weekday vs. Weekend', x = "interval", y = "number of steps"))
 ggsave(filename="figure/weekdayVsWeekendSteps.png",plot=g, dpi=72)
 ```
-
-![figure](figure/weekdayVsWeekendSteps.png)
+![plot of chunk weekdayVsWeekendSteps](figure/weekdayVsWeekendSteps.png)
 
 As I suspected, number of steps increased during the weekend in the middle of the measured interval. Another interesting finding is that number of steps are higher on weekdays in earlier interval. I guess poeple sleep in on weekends and generally have a later start!
 

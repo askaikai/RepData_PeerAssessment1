@@ -4,10 +4,17 @@ Written by ai
 
 ## Loading and preprocessing the data
 1. Load the data
-First, go to the right directory and read in data
+First, go to the right directory and read in data. Then clean up the interval into more meaningful expression: time. In addition, intervalIdx variable is created to index interval as continuous a variable.
 ``` {r setoptions, echo=TRUE, message=FALSE, warning=FALSE}
 setwd('~/Documents/Coursera/ReproducibleResearch//RepData_PeerAssessment1')
 d = read.csv('activity.csv')
+d$interval_orig = d$interval
+d$interval <- strptime(paste(d$date, sapply(d$interval_orig, formatC, width = 4, flag = 0)), format = "%Y-%m-%d %H%M")
+d$interval = gsub("^2012-\\w*-\\w* ","",d$interval)
+d$intervalIdx = 0
+for (i in 1:length(d$intervalIdx)){
+  d$intervalIdx[i]= which(unique(d$interval_orig)==d$interval_orig[i])
+}
 ```
 
 2. Process/transform the data (if necessary) into a format suitable for your analysis
@@ -23,14 +30,14 @@ dSum$sumSteps = as.numeric(dSum$sumSteps)
 _For this part of the assignment, you can ignore the missing values in the dataset._
 
 1. Make a histogram of the total number of steps taken each day
-```{r, message=FALSE, warning=FALSE}
+```{r histTotalNumSteps, message=FALSE, warning=FALSE}
 g= ggplot(dSum, aes(sumSteps)) + 
   geom_histogram(binwidth=500, colour="black", fill="white") + 
   labs(list(title = 'Distribution of the total number of steps taken each day', x = "sum of steps", y = "count (days)"))
 
 ggsave(filename="figure/histTotalNumSteps.png",plot=g,dpi=72)
 ```
-![figure](figure/histTotalNumSteps.png)
+![plot of chunk histTotalNumSteps](figure/histTotalNumSteps.png)
 
 2. Calculate and report the mean and median total number of steps taken per day
 ```{r}
@@ -42,15 +49,19 @@ Mean and median number of steps taken per day is `r format(round(table[1], 2), n
 
 ## What is the average daily activity pattern?
 1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
-```{r, message=FALSE, warning=FALSE}
+```{r avgDailyACtivityPattern, message=FALSE, warning=FALSE, results='hide'}
+dTimeSeries = sqldf('select interval, intervalIdx, avg(steps) as avgSteps from d group by interval')
+zeroHourIdx = grep("(^\\d*):00:(\\d*)",dTimeSeries$interval) # look for xx:00:xx to use in plotting
+zeroHour = dTimeSeries$interval[zeroHourIdx]
+
 png(file='figure/avgDailyACtivityPattern.png')
-dTimeSeries = sqldf('select interval, avg(steps) as avgSteps from d group by interval')
-plot(dTimeSeries$interval, dTimeSeries$avgSteps, type="l",ann=FALSE)
+plot(dTimeSeries$intervalIdx, dTimeSeries$avgSteps, type="l",ann=FALSE, xaxt="n")
+axis(1, at=zeroHourIdx, labels=zeroHour)
 title(main='Time-series of average steps at each interval across days',
         xlab='interval', ylab='average number of steps')
 dev.off()
 ```
-![figure](figure/avgDailyACtivityPattern.png)
+![plot of chunk avgDailyACtivityPattern](figure/avgDailyACtivityPattern.png)
 
 2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 ```{r}
@@ -110,7 +121,7 @@ print(table, type="html")
 Mean and median number of steps taken per day is `r format(round(table[1], 2), nsmall = 2)` and `r format(round(table[2], 2), nsmall = 2)`, respectively. These numbers are slightly different from the original data set, but the difference is very small. Now I'm going to make histograms to see where the difference is coming from.
 
 
-```{r, message=FALSE, warning=FALSE}
+```{r histOrigVsFilledData, message=FALSE, warning=FALSE}
 dBig = data.frame(c(dSum$sumSteps, dSumFilled$sumSteps))
 colnames(dBig)='dailyTotalSteps'
 dBig$data = rep(c('original','filled'),each=dim(dBig)[1]/2)
@@ -122,7 +133,7 @@ g = ggplot(dBig,aes(x=dailyTotalSteps,color=data)) +
   labs(list(title = 'Distribution of the total number of steps taken each day', x = "sum of steps", y = "count (days)"))
 ggsave(filename="figure/histOrigVsFilledData.png",plot=g, dpi=72)
 ```
-![figure](figure/histOrigVsFilledData.png)
+![plot of chunk histOrigVsFilledData](figure/histOrigVsFilledData.png)
 
 Interestingly, the only difference between the original and the filled data is the number of days the total stop was the highest. This suggests that, in the original data set, NAs happened throughout a given day. To test this speculation, I ran;
 
@@ -157,23 +168,26 @@ print(dSumFilledDays, type="html")
 ```
 It appears that number of steps increase during the weekend compared to weekdays. I'm curious to see at which time interval the number of steps differ between weekend and weekdays. My prediction is that we see the difference in mid-day, where people usually spend time at their desks on weekdays...
 
-```{r, message=FALSE, warning=FALSE}
+```{r weekdayVsWeekendSteps, message=FALSE, warning=FALSE}
 dFilled$days = weekdays(as.Date(dFilled$date), abbreviate=TRUE)
 dFilled$days = gsub("^[m|t|w|f]\\w*", "Weekday", dFilled$days, perl=TRUE,ignore.case=TRUE)
 dFilled$days = gsub("^s\\w*", "Weekend", dFilled$days, perl=TRUE,ignore.case=TRUE)
 
-dDays = sqldf('select days, interval, avg(steps) as avgSteps from dFilled group by days, interval')
+dDays = sqldf('select days, interval, intervalIdx, avg(steps) as avgSteps from dFilled group by days, interval')
+zeroHourIdx = grep("(^\\d*):00:(\\d*)",dDays$interval[1:((dim(dDays)[1])/2)]) # look for xx:00:xx to use in plotting
+zeroHour = dTimeSeries$interval[zeroHourIdx]
 
-g = ggplot(data=dDays, aes(x=interval, y=avgSteps)) + 
+g = ggplot(data=dDays, aes(x=intervalIdx, y=avgSteps)) + 
   geom_point() + 
   geom_line() + 
   facet_grid(days~.) + 
   theme_grey() +
+  scale_x_discrete(breaks = zeroHourIdx, labels = zeroHour) + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + 
   labs(list(title = 'Distribution of number of steps \n Weekday vs. Weekend', x = "interval", y = "number of steps"))
 ggsave(filename="figure/weekdayVsWeekendSteps.png",plot=g, dpi=72)
 ```
-
-![figure](figure/weekdayVsWeekendSteps.png)
+![plot of chunk weekdayVsWeekendSteps](figure/weekdayVsWeekendSteps.png)
 
 As I suspected, number of steps increased during the weekend in the middle of the measured interval. Another interesting finding is that number of steps are higher on weekdays in earlier interval. I guess poeple sleep in on weekends and generally have a later start!
 
