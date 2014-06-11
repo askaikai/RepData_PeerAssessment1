@@ -33,8 +33,6 @@ g= ggplot(dSum, aes(sumSteps)) +
 
 ggsave(filename="figure/histTotalNumSteps.png",plot=g,dpi=72)
 ```
-
-![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2.png) 
 ![figure](figure/histTotalNumSteps.png)
 
 2. Calculate and report the mean and median total number of steps taken per day
@@ -63,11 +61,9 @@ title(main='Time-series of average steps at each interval across days',
 dev.off()
 ```
 
-![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4.png) 
-
 ```
-## RStudioGD 
-##         2
+## pdf 
+##   2
 ```
 ![figure](figure/avgDailyACtivityPattern.png)
 
@@ -172,8 +168,6 @@ g = ggplot(dBig,aes(x=dailyTotalSteps,color=data)) +
   labs(list(title = 'Distribution of the total number of steps taken each day', x = "sum of steps", y = "count (days)"))
 ggsave(filename="figure/histOrigVsFilledData.png",plot=g, dpi=72)
 ```
-
-![plot of chunk unnamed-chunk-11](figure/unnamed-chunk-11.png) 
 ![figure](figure/histOrigVsFilledData.png)
 
 Interestingly, the only difference between the original and the filled data is the number of days the total stop was the highest. This suggests that, in the original data set, NAs happened throughout a given day. To test this speculation, I ran;
@@ -240,8 +234,6 @@ g = ggplot(data=dDays, aes(x=interval, y=avgSteps)) +
   labs(list(title = 'Distribution of number of steps \n Weekday vs. Weekend', x = "interval", y = "number of steps"))
 ggsave(filename="figure/weekdayVsWeekendSteps.png",plot=g, dpi=72)
 ```
-
-![plot of chunk unnamed-chunk-15](figure/unnamed-chunk-15.png) 
 
 ![figure](figure/weekdayVsWeekendSteps.png)
 
