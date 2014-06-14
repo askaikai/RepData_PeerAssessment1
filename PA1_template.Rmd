@@ -116,7 +116,7 @@ print(head(dFilled), type="html")
 dSumFilled = sqldf('select date, sum(steps) as sumSteps from dFilled group by date')
 dSumFilled$sumSteps = as.numeric(dSumFilled$sumSteps)
 table = sqldf('select avg(sumSteps), median(sumSteps) from dSumFilled')
-print(table, type="html")
+print(format(round(table, 2), nsmall = 2), type="html")
 ```
 Mean and median number of steps taken per day is `r format(round(table[1], 2), nsmall = 2)` and `r format(round(table[2], 2), nsmall = 2)`, respectively. These numbers are slightly different from the original data set, but the difference is very small. Now I'm going to make histograms to see where the difference is coming from.
 

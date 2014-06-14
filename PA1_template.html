@@ -341,11 +341,11 @@ for (i in 1:length(naEntry)){
 <pre><code class="r">dSumFilled = sqldf(&#39;select date, sum(steps) as sumSteps from dFilled group by date&#39;)
 dSumFilled$sumSteps = as.numeric(dSumFilled$sumSteps)
 table = sqldf(&#39;select avg(sumSteps), median(sumSteps) from dSumFilled&#39;)
-print(table, type=&quot;html&quot;)
+print(format(round(table, 2), nsmall = 2), type=&quot;html&quot;)
 </code></pre>
 
 <pre><code>##   avg(sumSteps) median(sumSteps)
-## 1         10766            10766
+## 1      10766.19         10766.19
 </code></pre>
 
 <p>Mean and median number of steps taken per day is 10766.19 and 10766.19, respectively. These numbers are slightly different from the original data set, but the difference is very small. Now I&#39;m going to make histograms to see where the difference is coming from.</p>

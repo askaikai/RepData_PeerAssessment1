@@ -153,12 +153,12 @@ the new dataset with missing values filled in was created
 dSumFilled = sqldf('select date, sum(steps) as sumSteps from dFilled group by date')
 dSumFilled$sumSteps = as.numeric(dSumFilled$sumSteps)
 table = sqldf('select avg(sumSteps), median(sumSteps) from dSumFilled')
-print(table, type="html")
+print(format(round(table, 2), nsmall = 2), type="html")
 ```
 
 ```
 ##   avg(sumSteps) median(sumSteps)
-## 1         10766            10766
+## 1      10766.19         10766.19
 ```
 Mean and median number of steps taken per day is 10766.19 and 10766.19, respectively. These numbers are slightly different from the original data set, but the difference is very small. Now I'm going to make histograms to see where the difference is coming from.
 
