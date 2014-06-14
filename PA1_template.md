@@ -3,8 +3,8 @@ This is an R-markdown for Peer Assessment 1 in Reproducible Research.
 Written by ai  
 
 ## Loading and preprocessing the data
-1. Load the data
-First, go to the right directory and read in data. Then clean up the interval into more meaningful expression: time. In addition, intervalIdx variable is created to index interval as continuous a variable.
+1.Load the data  
+First, go to the right directory and read in data. Then clean up the interval into more meaningful expression: time of the day. In addition, create intervalIdx variable to index interval as continuous a variable (will be useful when plotting later).
 
 ```r
 setwd('~/Documents/Coursera/ReproducibleResearch//RepData_PeerAssessment1')
@@ -18,7 +18,7 @@ for (i in 1:length(d$intervalIdx)){
 }
 ```
 
-2. Process/transform the data (if necessary) into a format suitable for your analysis
+2.Process/transform the data (if necessary) into a format suitable for your analysis
 Load analysis libraries and make relevant variable numerical
 
 ```r
@@ -31,7 +31,7 @@ dSum$sumSteps = as.numeric(dSum$sumSteps)
 ## What is mean total number of steps taken per day?
 _For this part of the assignment, you can ignore the missing values in the dataset._
 
-1. Make a histogram of the total number of steps taken each day
+1.Make a histogram of the total number of steps taken each day
 
 ```r
 g= ggplot(dSum, aes(sumSteps)) + 
@@ -42,22 +42,22 @@ ggsave(filename="figure/histTotalNumSteps.png",plot=g,dpi=72)
 ```
 ![plot of chunk histTotalNumSteps](figure/histTotalNumSteps.png)
 
-2. Calculate and report the mean and median total number of steps taken per day
+2.Calculate and report the mean and median total number of steps taken per day
 
 ```r
 library(xtable)
 table = sqldf('select avg(sumSteps), median(sumSteps) from dSum')
-print(table, type="html")
+print(format(round(table, 2), nsmall = 2), type ='html')
 ```
 
 ```
 ##   avg(sumSteps) median(sumSteps)
-## 1         10766            10765
+## 1      10766.19         10765.00
 ```
 Mean and median number of steps taken per day is 10766.19 and 10765.00, respectively.
 
 ## What is the average daily activity pattern?
-1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+1.Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
 
 ```r
 dTimeSeries = sqldf('select interval, intervalIdx, avg(steps) as avgSteps from d group by interval')
@@ -73,7 +73,7 @@ dev.off()
 ```
 ![plot of chunk avgDailyACtivityPattern](figure/avgDailyACtivityPattern.png)
 
-2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+2.Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
 
 ```r
 maxLine = which(dTimeSeries$avgSteps==max(dTimeSeries$avgSteps))
@@ -84,7 +84,7 @@ Interval 08:35:00 contains the max number of steps (206.1698)
 ## Imputing missing values
 _Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data._
 
-1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+1.Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
 
 ```r
 a=matrix(0,length(names(d)),2)
@@ -105,13 +105,13 @@ print(a, type="html")
 ## 4 interval_orig       0
 ## 5   intervalIdx       0
 ```
-Out of 17568 entries in the data set, 2304 are NAs
+Out of 17568 entries in the data set, 2304 are NAs, and they are all in the steps variable.
 
-2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+2.Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
 
-I think it's a good approach to fill the missing values using the average of steps from the same interval, since there are enough data to cover all intervals
+Considering that number os steps fluctuates during the course of the day, it's a good approach to fill the missing values using the average of steps from the same interval. In addition, as we will see later, using the mean for that day is not a plausible option, since NAs cover a whole given day.  
 
-3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+3.Create a new dataset that is equal to the original dataset but with the missing data filled in.
 
 ```r
 dFilled = d
@@ -146,7 +146,7 @@ the new dataset with missing values filled in was created
 ## 6 2.09434 2012-10-01 00:25:00            25           6
 ```
 
-4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+4.Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
 
 ```r
@@ -203,7 +203,7 @@ The table above confirms my speculation; NAs in the original dat set always happ
 ## Are there differences in activity patterns between weekdays and weekends?
 _For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part._
 
-1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
+1.Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
 
 ```r
@@ -212,7 +212,7 @@ dSumFilled$days = gsub("^[m|t|w|f]\\w*", "Weekday", dSumFilled$days, perl=TRUE,i
 dSumFilled$days = gsub("^s\\w*", "Weekend", dSumFilled$days, perl=TRUE,ignore.case=TRUE)
 ```
 
-2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
+2.Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
 
 ```r
 dSumFilledDays = sqldf('select days, avg(sumSteps) from dSumFilled group by days')
@@ -224,7 +224,7 @@ print(dSumFilledDays, type="html")
 ## 1 Weekday         10256
 ## 2 Weekend         12202
 ```
-It appears that number of steps increase during the weekend compared to weekdays. I'm curious to see at which time interval the number of steps differ between weekend and weekdays. My prediction is that we see the difference in mid-day, where people usually spend time at their desks on weekdays...
+It appears that number of steps increased during the weekend compared to weekdays. I'm curious to see at which time interval the number of steps differ between weekend and weekdays. My prediction is that we see the difference in mid-day, where people usually spend time at their desks on weekdays...
 
 
 ```r
@@ -248,6 +248,6 @@ ggsave(filename="figure/weekdayVsWeekendSteps.png",plot=g, dpi=72)
 ```
 ![plot of chunk weekdayVsWeekendSteps](figure/weekdayVsWeekendSteps.png)
 
-As I suspected, number of steps increased during the weekend in the middle of the measured interval. Another interesting finding is that number of steps are higher on weekdays in earlier interval. I guess poeple sleep in on weekends and generally have a later start!
+As I suspected, number of steps increased during the weekend in the middle of the measured interval. Another interesting finding is that number of steps were higher on weekdays in earlier interval (I guess this person slept in on weekends and generally had a later start!).
 
 
