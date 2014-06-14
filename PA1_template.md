@@ -18,7 +18,7 @@ for (i in 1:length(d$intervalIdx)){
 }
 ```
 
-2.Process/transform the data (if necessary) into a format suitable for your analysis
+2.Process/transform the data (if necessary) into a format suitable for your analysis  
 Load analysis libraries and make relevant variable numerical
 
 ```r
